@@ -1,5 +1,5 @@
 from PIL import Image
-import numpy as np
+import itertools
 
 class DetailedImage(object):
     def __init__(self, raw_content):
@@ -17,77 +17,98 @@ def load_image(path):
 def show_image(detailed_image):
     detailed_image.raw_content.show()
 
-
 def negative(image):
     image, rows, columns = image.meta_copy()
 
-    for i in range(rows):
-        for j in range(columns):
-            R, G, B = image.getpixel((i, j))
-            image.putpixel((i, j), (255 - r, 255 - g, 255 - b))
+    for i, j in itertools.product(range(rows), range(columns)):
+        R, G, B = image.getpixel((i, j))
+        image.putpixel((i, j), (255 - r, 255 - g, 255 - b))
     
     return DetailedImage(image)
 
 def negative(image):
     image, rows, columns = image.meta_copy()
 
-    for i in range(rows):
-        for j in range(columns):
-            r, g, b = image.getpixel((i, j))
-            image.putpixel((i, j), (255 - r, 255 - g, 255 - b))
+    for i, j in itertools.product(range(rows), range(columns)):
+        r, g, b = image.getpixel((i, j))
+        image.putpixel((i, j), (255 - r, 255 - g, 255 - b))
     
     return DetailedImage(image)
 
 def rgb_to_yiq(image):
     image, rows, columns = image.meta_copy()
 
-    for i in range(rows):
-        for j in range(columns):
-            R, G, B = image.getpixel((i, j))
+    for i, j in itertools.product(range(rows), range(columns)):
+        R, G, B = image.getpixel((i, j))
 
-            Y, I, Q = (
-                int(0.299 * R + 0.587 * G + 0.114 * B),
-                int(0.596 * R - 0.275 * G - 0.321 * B),
-                int(0.212 * R - 0.523 * G + 0.311 * B)
-            )
+        Y, I, Q = (
+            int(0.299 * R + 0.587 * G + 0.114 * B),
+            int(0.596 * R - 0.275 * G - 0.321 * B),
+            int(0.212 * R - 0.523 * G + 0.311 * B)
+        )
 
-            image.putpixel((i, j), (Y, I, Q))
+        image.putpixel((i, j), (Y, I, Q))
 
     return DetailedImage(image)
 
 def band_red(image, is_monocromatic=False):
     image, rows, columns = image.meta_copy()
 
-    for i in range(rows):
-        for j in range(columns):
-            R, _, _ = image.getpixel((i, j))
-            image.putpixel(
-                (i, j),
-                (R, R, R) if is_monocromatic else (R, 0, 0)
-            )
+    for i, j in itertools.product(range(rows), range(columns)):
+        R, _, _ = image.getpixel((i, j))
+        image.putpixel(
+            (i, j),
+            (R, R, R) if is_monocromatic else (R, 0, 0)
+        )
             
     return DetailedImage(image)
 
 def band_green(image, is_monocromatic=False):
     image, rows, columns = image.meta_copy()
-    for i in range(rows):
-        for j in range(columns):
-            _, G, _ = image.getpixel((i, j))
-            image.putpixel(
-                (i, j),
-                (G, G, G) if is_monocromatic else (0, G, 0)
-            )
+    
+    for i, j in itertools.product(range(rows), range(columns)):
+        _, G, _ = image.getpixel((i, j))
+        image.putpixel(
+            (i, j),
+            (G, G, G) if is_monocromatic else (0, G, 0)
+        )
     return DetailedImage(image)
 
 def band_blue(image, is_monocromatic=False):
     image, rows, columns = image.meta_copy()
-    for i in range(rows):
-        for j in range(columns):
-            _, _, B = image.getpixel((i, j))
-            image.putpixel(
-                (i, j),
-                (B, B, B) if is_monocromatic else (0, 0, B)
-            )
+    
+    for i, j in itertools.product(range(rows), range(columns)):
+        _, _, B = image.getpixel((i, j))
+        image.putpixel(
+            (i, j),
+            (B, B, B) if is_monocromatic else (0, 0, B)
+        )
+    return DetailedImage(image)
+
+def limited_rgb(R, G, B):
+    limit = lambda value: 255 if value > 255 else (
+        0 if value < 0 else value
+    )
+    return limit(R), limit(G), limit(B)
+
+def brightness_control_additive(image, C):
+    image, rows, columns = image.meta_copy()
+
+    for i, j in itertools.product(range(rows), range(columns)):
+        R, G, B = image.getpixel((i, j))
+        R, G, B = limited_rgb(R + C, G + C, B + C)
+        image.putpixel((i, j), (R, G, B))
+    
+    return DetailedImage(image)
+
+def brightness_control_multiplicative(image, C):
+    image, rows, columns = image.meta_copy()
+
+    for i, j in itertools.product(range(rows), range(columns)):
+        R, G, B = image.getpixel((i, j))
+        R, G, B = limited_rgb(R * C, G * C, B * C)
+        image.putpixel((i, j), (R, G, B))
+    
     return DetailedImage(image)
 
 LENA_IMAGE_PATH = "../assets/images/lena.jpg"
@@ -107,6 +128,8 @@ def main():
     show_image(band_blue(lena))
     show_image(band_blue(lena, is_monocromatic=True))
     
+    show_image(brightness_control_additive(lena, 100))
+    show_image(brightness_control_multiplicative(lena, 2))
 
 if __name__ == '__main__':
     main()
