@@ -51,37 +51,53 @@ def rgb_to_yiq(image):
 
     return DetailedImage(image)
 
-def band_red(image, is_monocromatic=False):
+def yiq_to_rgb(image):
+    image, rows, columns = image.meta_copy()
+
+    for i, j in itertools.product(range(rows), range(columns)):
+        Y, I, Q = image.getpixel((i, j))
+
+        R, G, B = (
+            int((1.000 * Y + 0.956 * I + 0.621 * Q)),
+			int((1.000 * Y - 0.272 * I - 0.647 * Q)),
+			int((1.000 * Y - 1.106 * I + 1.703 * Q))
+        )
+
+        image.putpixel((i, j), (R, G, B))
+
+    return DetailedImage(image)
+
+def band_red(image, monocromatic=False):
     image, rows, columns = image.meta_copy()
 
     for i, j in itertools.product(range(rows), range(columns)):
         R, _, _ = image.getpixel((i, j))
         image.putpixel(
             (i, j),
-            (R, R, R) if is_monocromatic else (R, 0, 0)
+            (R, R, R) if monocromatic else (R, 0, 0)
         )
             
     return DetailedImage(image)
 
-def band_green(image, is_monocromatic=False):
+def band_green(image, monocromatic=False):
     image, rows, columns = image.meta_copy()
     
     for i, j in itertools.product(range(rows), range(columns)):
         _, G, _ = image.getpixel((i, j))
         image.putpixel(
             (i, j),
-            (G, G, G) if is_monocromatic else (0, G, 0)
+            (G, G, G) if monocromatic else (0, G, 0)
         )
     return DetailedImage(image)
 
-def band_blue(image, is_monocromatic=False):
+def band_blue(image, monocromatic=False):
     image, rows, columns = image.meta_copy()
     
     for i, j in itertools.product(range(rows), range(columns)):
         _, _, B = image.getpixel((i, j))
         image.putpixel(
             (i, j),
-            (B, B, B) if is_monocromatic else (0, 0, B)
+            (B, B, B) if monocromatic else (0, 0, B)
         )
     return DetailedImage(image)
 
@@ -101,6 +117,7 @@ def brightness_control_additive(image, C):
     
     return DetailedImage(image)
 
+
 def brightness_control_multiplicative(image, C):
     image, rows, columns = image.meta_copy()
 
@@ -111,25 +128,65 @@ def brightness_control_multiplicative(image, C):
     
     return DetailedImage(image)
 
+def band_y_threshold(image, M=None):
+    image, rows, columns = rgb_to_yiq(image).meta_copy()
+    
+    # If the user has not specified the parameter,
+    #   the mean should be calculated [IM]
+    if M == None:
+        yellow_band_summation = 0
+        for i, j in itertools.product(range(rows), range(columns)):
+            Y, _, _ = image.getpixel((i, j))
+            yellow_band_summation += Y
+        
+        # The final mean is calculated [IM]
+        M = yellow_band_summation / (rows * columns)
+
+    for i, j in itertools.product(range(rows), range(columns)):
+        Y, I, Q = image.getpixel((i, j))
+        image.putpixel(
+            (i, j),
+            # Taking the limiar decision [IM]
+            ((255 if Y >= M else 0), 0, 0)
+        )
+    
+    return yiq_to_rgb(DetailedImage(image))
+
+
 LENA_IMAGE_PATH = "../assets/images/lena.jpg"
 
 def main():
+    # Load and show image [IM]
     lena = load_image(LENA_IMAGE_PATH)
-    show_image(lena)
+    # show_image(lena)
+
+    # Negative filter [IM]
     show_image(negative(lena))
-    show_image(rgb_to_yiq(lena))
     
+    # RGB to YIQ and YIQ to RGB [IM]
+    yiq_lena = rgb_to_yiq(lena)
+    show_image(yiq_lena)
+
+    rgb_lena = yiq_to_rgb(yiq_lena)
+    show_image(rgb_lena)
+
+    # R, G and B bands for colored and monocromatic images [IM]
     show_image(band_red(lena))
-    show_image(band_red(lena, is_monocromatic=True))
+    show_image(band_red(lena, monocromatic=True))
 
     show_image(band_green(lena))
-    show_image(band_green(lena, is_monocromatic=True))
+    show_image(band_green(lena, monocromatic=True))
 
     show_image(band_blue(lena))
-    show_image(band_blue(lena, is_monocromatic=True))
+    show_image(band_blue(lena, monocromatic=True))
     
+    # Additive and multiplicative brightness control [IM]
     show_image(brightness_control_additive(lena, 100))
     show_image(brightness_control_multiplicative(lena, 2))
+
+    # Threshold over Y [IM]
+    show_image(band_y_threshold(lena))
+    show_image(band_y_threshold(lena, 100))
 
 if __name__ == '__main__':
     main()
