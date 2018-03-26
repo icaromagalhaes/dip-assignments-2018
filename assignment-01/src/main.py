@@ -54,7 +54,42 @@ def rgb_to_yiq(image):
             image.putpixel((i, j), (Y, I, Q))
 
     return DetailedImage(image)
-    
+
+def band_red(image, is_monocromatic=False):
+    image, rows, columns = image.meta_copy()
+
+    for i in range(rows):
+        for j in range(columns):
+            R, _, _ = image.getpixel((i, j))
+            image.putpixel(
+                (i, j),
+                (R, R, R) if is_monocromatic else (R, 0, 0)
+            )
+            
+    return DetailedImage(image)
+
+def band_green(image, is_monocromatic=False):
+    image, rows, columns = image.meta_copy()
+    for i in range(rows):
+        for j in range(columns):
+            _, G, _ = image.getpixel((i, j))
+            image.putpixel(
+                (i, j),
+                (G, G, G) if is_monocromatic else (0, G, 0)
+            )
+    return DetailedImage(image)
+
+def band_blue(image, is_monocromatic=False):
+    image, rows, columns = image.meta_copy()
+    for i in range(rows):
+        for j in range(columns):
+            _, _, B = image.getpixel((i, j))
+            image.putpixel(
+                (i, j),
+                (B, B, B) if is_monocromatic else (0, 0, B)
+            )
+    return DetailedImage(image)
+
 LENA_IMAGE_PATH = "../assets/images/lena.jpg"
 
 def main():
@@ -62,6 +97,16 @@ def main():
     show_image(lena)
     show_image(negative(lena))
     show_image(rgb_to_yiq(lena))
+    
+    show_image(band_red(lena))
+    show_image(band_red(lena, is_monocromatic=True))
+
+    show_image(band_green(lena))
+    show_image(band_green(lena, is_monocromatic=True))
+
+    show_image(band_blue(lena))
+    show_image(band_blue(lena, is_monocromatic=True))
+    
 
 if __name__ == '__main__':
     main()
