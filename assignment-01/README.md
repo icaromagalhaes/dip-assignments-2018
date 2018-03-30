@@ -1,4 +1,5 @@
-# Assignment 01
+# Trabalho 01
 
-- Deadline - 04/04
-- Chosen programming language: Python 3.5.4
+- Aluno: Ícaro Lima Magalhães
+- Data de entrega - 04/04
+- Linguagem de programação usada: Python 3.6
