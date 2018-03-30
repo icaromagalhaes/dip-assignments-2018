@@ -1,7 +1,6 @@
-from PIL import Image
+from PIL import Image, ImageOps
 import numpy as np
 import itertools
-import cv2
 
 class DetailedImage(object):
     def __init__(self, raw_content):
@@ -12,8 +11,7 @@ class DetailedImage(object):
         return self.raw_content.copy()
 
     def meta_copy(self):
-        return self.raw_image_copy(), self.rows, self.columns
-
+        return self.raw_image_copy(), itertools.product(range(self.rows), range(self.columns))
 
 def load_image(path):
     raw_image = Image.open(path)
@@ -23,20 +21,20 @@ def show_image(detailed_image):
     detailed_image.raw_content.show()
 
 def negative(image):
-    image, rows, columns = image.meta_copy()
+    image, image_range = image.meta_copy()
     pixels = image.load()
 
-    for i, j in itertools.product(range(rows), range(columns)):
+    for i, j in image_range:
         R, G, B = pixels[i, j]
         pixels[i, j] = (255 - R, 255 - G, 255 - B)
 
     return DetailedImage(image)
 
 def rgb_to_yiq(image):
-    image, rows, columns = image.meta_copy()
+    image, image_range = image.meta_copy()
     pixels = image.load()
 
-    for i, j in itertools.product(range(rows), range(columns)):
+    for i, j in image_range:
         R, G, B = pixels[i, j]
 
         Y, I, Q = (
@@ -50,10 +48,10 @@ def rgb_to_yiq(image):
     return DetailedImage(image)
 
 def yiq_to_rgb(image):
-    image, rows, columns = image.meta_copy()
+    image, image_range = image.meta_copy()
     pixels = image.load()
 
-    for i, j in itertools.product(range(rows), range(columns)):
+    for i, j in image_range:
         Y, I, Q = pixels[i, j]
 
         R, G, B = (
@@ -67,30 +65,30 @@ def yiq_to_rgb(image):
     return DetailedImage(image)
 
 def red_band(image, monocromatic=False):
-    image, rows, columns = image.meta_copy()
+    image, image_range = image.meta_copy()
     pixels = image.load()
 
-    for i, j in itertools.product(range(rows), range(columns)):
+    for i, j in image_range:
         R, _, _ = pixels[i, j]
         pixels[i, j] = (R, R, R) if monocromatic else (R, 0, 0)
 
     return DetailedImage(image)
 
 def green_band(image, monocromatic=False):
-    image, rows, columns = image.meta_copy()
+    image, image_range = image.meta_copy()
     pixels = image.load()
 
-    for i, j in itertools.product(range(rows), range(columns)):
+    for i, j in image_range:
         _, G, _ = pixels[i, j]
         pixels[i, j] = (G, G, G) if monocromatic else (0, G, 0)
 
     return DetailedImage(image)
 
 def blue_band(image, monocromatic=False):
-    image, rows, columns = image.meta_copy()
+    image, image_range = image.meta_copy()
     pixels = image.load()
 
-    for i, j in itertools.product(range(rows), range(columns)):
+    for i, j in image_range:
         _, _, B = pixels[i, j]
         pixels[i, j] = (B, B, B) if monocromatic else (0, 0, B)
 
@@ -103,10 +101,10 @@ def limited_rgb(R, G, B):
     return limit(R), limit(G), limit(B)
 
 def brightness_control_additive(image, C):
-    image, rows, columns = image.meta_copy()
+    image, image_range = image.meta_copy()
     pixels = image.load()
 
-    for i, j in itertools.product(range(rows), range(columns)):
+    for i, j in image_range:
         R, G, B = pixels[i, j]
         R, G, B = limited_rgb(R + C, G + C, B + C)
         pixels[i, j] = (R, G, B)
@@ -115,10 +113,10 @@ def brightness_control_additive(image, C):
 
 
 def brightness_control_multiplicative(image, C):
-    image, rows, columns = image.meta_copy()
+    image, image_range = image.meta_copy()
     pixels = image.load()
 
-    for i, j in itertools.product(range(rows), range(columns)):
+    for i, j in image_range:
         R, G, B = pixels[i, j]
         R, G, B = limited_rgb(R * C, G * C, B * C)
         pixels[i, j] = (R, G, B)
@@ -126,7 +124,7 @@ def brightness_control_multiplicative(image, C):
     return DetailedImage(image)
 
 def y_band_threshold(image, M=None):
-    image, rows, columns = rgb_to_yiq(image).meta_copy()
+    image, image_range = rgb_to_yiq(image).meta_copy()
     pixels = image.load()
 
     # If the user has not specified the parameter,
@@ -134,7 +132,7 @@ def y_band_threshold(image, M=None):
     if M == None:
         M = np.mean(np.array(image)[:, :, 0].flatten())
 
-    for i, j in itertools.product(range(rows), range(columns)):
+    for i, j in image_range:
         Y, I, Q = pixels[i, j]
         pixels[i, j] = ((255 if Y >= M else 0), 0, 0)
 
@@ -144,11 +142,11 @@ def mean_filter(image, kernel_size=3):
     def integer_mask_mean(component):
         return np.mean(component).astype(int)
 
-    image, rows, columns = image.meta_copy()
+    image, image_range = image.meta_copy()
     pixels = image.load()
     npimage = np.array(image)
 
-    for i, j in itertools.product(range(rows), range(columns)):
+    for i, j in image_range:
         mask = npimage[i: i + kernel_size, j: j + kernel_size]
         pixels[j, i] = (
             integer_mask_mean(mask[:, :, 0]), # R
@@ -162,11 +160,11 @@ def median_filter(image, kernel_size=3):
     def integer_mask_median(component):
         return np.median(component).astype(int)
 
-    image, rows, columns = image.meta_copy()
+    image, image_range = image.meta_copy()
     pixels = image.load()
     npimage = np.array(image)
 
-    for i, j in itertools.product(range(rows), range(columns)):
+    for i, j in image_range:
         mask = npimage[i: i + kernel_size, j: j + kernel_size]
         pixels[j, i] = (
             integer_mask_median(mask[:, :, 0].flatten()), # R
@@ -175,6 +173,23 @@ def median_filter(image, kernel_size=3):
         )
 
     return DetailedImage(image)
+
+def mask_filter(image, mask):
+    rows, columns = image.rows, image.columns
+    image, _ = image.meta_copy()
+    pixels = image.load()
+    npimage = np.array(image)
+
+    for i, j in itertools.product(range(2, rows - 2), range(2, columns - 2)):
+        newMask = npimage[i: i + 3, j: j + 3]
+
+        masked_R = np.sum(mask * newMask[:, :, 0])
+        masked_G = np.sum(mask * newMask[:, :, 1])
+        masked_B = np.sum(mask * newMask[:, :, 2])
+
+        pixels[j, i] = (masked_R, masked_G, masked_B)
+    
+    return DetailedImage(ImageOps.crop(image, border=3))
 
 def simulate(image):
     # Show image [IM]
@@ -209,8 +224,47 @@ def simulate(image):
     show_image(y_band_threshold(image, 100))
 
     # Mean and Median filters - slow operations for large images [IM]
-    show_image(mean_filter(image=lena, kernel_size=3)) # just slow [IM]
-    show_image(median_filter(lena, kernel_size=3)) # little bit slower than mean [IM]
+    show_image(mean_filter(image, kernel_size=3)) # just slow [IM]
+    show_image(median_filter(image, kernel_size=3)) # little bit slower than mean [IM]
+
+    # Laplacian filter [IM]
+    laplacian_mask = np.array(
+        [[ 0, -1,  0],
+         [-1,  4, -1],
+         [ 0, -1,  0]]
+    )
+    show_image(mask_filter(image, laplacian_mask))
+
+    # Sobel filter [IM]
+    sobel_over_x_mask = np.array(
+        [[-1,  0,  1],
+         [-2,  0,  2],
+         [-1,  0,  1]]
+    )
+    show_image(mask_filter(image, sobel_over_x_mask))
+
+    sobel_over_y_mask = np.array(
+        [[-1, -2, -1],
+         [ 0,  0,  0],
+         [ 1,  2,  1]]
+    )
+    show_image(mask_filter(image, sobel_over_y_mask))
+
+    # Suggested filters [IM]
+    sobel_over_y_mask = np.array(
+        [[ 0, -1,  0],
+         [-1,  5, -1],
+         [ 0, -1,  0]]
+    )
+    show_image(mask_filter(image, sobel_over_y_mask))
+
+    sobel_over_y_mask = np.array(
+        [[0,  0,  0],
+         [0,  1,  0],
+         [0,  0, -1]]
+    )
+    show_image(mask_filter(image, sobel_over_y_mask))
+    
 
 def main():
     LENA_IMAGE_PATH = "../assets/images/lena.jpg"
