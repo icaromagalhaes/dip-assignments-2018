@@ -1,5 +1,8 @@
 from PIL import Image
+import numpy as np
 import itertools
+from pprint import pprint
+
 
 class DetailedImage(object):
     def __init__(self, raw_content):
@@ -58,9 +61,9 @@ def yiq_to_rgb(image):
         Y, I, Q = image.getpixel((i, j))
 
         R, G, B = (
-            int((1.000 * Y + 0.956 * I + 0.621 * Q)),
-			int((1.000 * Y - 0.272 * I - 0.647 * Q)),
-			int((1.000 * Y - 1.106 * I + 1.703 * Q))
+            int(1.000 * Y + 0.956 * I + 0.621 * Q),
+			int(1.000 * Y - 0.272 * I - 0.647 * Q),
+			int(1.000 * Y - 1.106 * I + 1.703 * Q)
         )
 
         image.putpixel((i, j), (R, G, B))
@@ -132,15 +135,9 @@ def band_y_threshold(image, M=None):
     image, rows, columns = rgb_to_yiq(image).meta_copy()
     
     # If the user has not specified the parameter,
-    #   the mean should be calculated [IM]
+    #   the mean Y should be calculated [IM]
     if M == None:
-        yellow_band_summation = 0
-        for i, j in itertools.product(range(rows), range(columns)):
-            Y, _, _ = image.getpixel((i, j))
-            yellow_band_summation += Y
-        
-        # The final mean is calculated [IM]
-        M = yellow_band_summation / (rows * columns)
+        M = np.mean(np.array(image)[:, :, 0].flatten())
 
     for i, j in itertools.product(range(rows), range(columns)):
         Y, I, Q = image.getpixel((i, j))
@@ -149,16 +146,14 @@ def band_y_threshold(image, M=None):
             # Taking the limiar decision [IM]
             ((255 if Y >= M else 0), 0, 0)
         )
-    
-    return yiq_to_rgb(DetailedImage(image))
 
+    return yiq_to_rgb(DetailedImage(image))
 
 LENA_IMAGE_PATH = "../assets/images/lena.jpg"
 
-def main():
-    # Load and show image [IM]
-    lena = load_image(LENA_IMAGE_PATH)
+def simulate(lena):
     # show_image(lena)
+    show_image(lena)
 
     # Negative filter [IM]
     show_image(negative(lena))
@@ -187,6 +182,13 @@ def main():
     # Threshold over Y [IM]
     show_image(band_y_threshold(lena))
     show_image(band_y_threshold(lena, 100))
+
+
+def main():
+    # Load and show image [IM]
+    lena = load_image(LENA_IMAGE_PATH)
+    
+    simulate(lena)
 
 if __name__ == '__main__':
     main()
