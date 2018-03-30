@@ -1,5 +1,32 @@
-# Trabalho 01
+# **Trabalho 01**
+### **Introdução ao Processamento Digital de Imagens**
+### Prof. Leonardo
 
-- Aluno: Ícaro Lima Magalhães
-- Data de entrega - 04/04
-- Linguagem de programação usada: Python 3.6
+---
+
+#### Aluno: Ícaro Magalhães
+#### Data: 04/04/2018
+
+---
+
+## **Introdução**
+
+### Contextualização
+### Apresentação do tema
+### Fundamentação teórica
+### Objetivos
+
+## **Materiais e Métodos**
+
+### Descrição das atividades desenvolvidas
+### Ferramentas e conhecimentos utilizados
+
+## **Resultados**
+
+## **Discussão**
+
+### Problemas e dificuldades encontradas
+
+### Comentários críticos sobre os resultados
+
+## **Conclusão**
