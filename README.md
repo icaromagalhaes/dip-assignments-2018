@@ -3,7 +3,7 @@
 ## Requirements
 
 - Recommended OS: Linux Ubuntu 16.04 LTS 64-bit
-- Python 3.5.2
+- Python 3.6.3
 - pip 9.0.3
 - virtualenvwrapper
 
