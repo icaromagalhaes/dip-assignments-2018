@@ -1,14 +1,19 @@
 from PIL import Image
 import numpy as np
 import itertools
+import cv2
 
 class DetailedImage(object):
     def __init__(self, raw_content):
         self.raw_content = raw_content
         self.rows, self.columns = raw_content.size
 
+    def raw_image_copy(self):
+        return self.raw_content.copy()
+
     def meta_copy(self):
-        return self.raw_content.copy(), self.rows, self.columns
+        return self.raw_image_copy(), self.rows, self.columns
+
 
 def load_image(path):
     raw_image = Image.open(path)
@@ -61,7 +66,7 @@ def yiq_to_rgb(image):
 
     return DetailedImage(image)
 
-def band_red(image, monocromatic=False):
+def red_band(image, monocromatic=False):
     image, rows, columns = image.meta_copy()
     pixels = image.load()
 
@@ -71,7 +76,7 @@ def band_red(image, monocromatic=False):
 
     return DetailedImage(image)
 
-def band_green(image, monocromatic=False):
+def green_band(image, monocromatic=False):
     image, rows, columns = image.meta_copy()
     pixels = image.load()
 
@@ -81,7 +86,7 @@ def band_green(image, monocromatic=False):
 
     return DetailedImage(image)
 
-def band_blue(image, monocromatic=False):
+def blue_band(image, monocromatic=False):
     image, rows, columns = image.meta_copy()
     pixels = image.load()
 
@@ -120,7 +125,7 @@ def brightness_control_multiplicative(image, C):
 
     return DetailedImage(image)
 
-def band_y_threshold(image, M=None):
+def y_band_threshold(image, M=None):
     image, rows, columns = rgb_to_yiq(image).meta_copy()
     pixels = image.load()
 
@@ -135,13 +140,47 @@ def band_y_threshold(image, M=None):
 
     return yiq_to_rgb(DetailedImage(image))
 
-LENA_IMAGE_PATH = "../assets/images/lena.jpg"
+def mean_filter(image, kernel_size=3):
+    def integer_mask_mean(component):
+        return np.mean(component).astype(int)
+
+    image, rows, columns = image.meta_copy()
+    pixels = image.load()
+    npimage = np.array(image)
+
+    for i, j in itertools.product(range(rows), range(columns)):
+        mask = npimage[i: i + kernel_size, j: j + kernel_size]
+        pixels[j, i] = (
+            integer_mask_mean(mask[:, :, 0]), # R
+            integer_mask_mean(mask[:, :, 1]), # G
+            integer_mask_mean(mask[:, :, 2])  # B
+        )
+
+    return DetailedImage(image)
+
+def median_filter(image, kernel_size=3):
+    def integer_mask_median(component):
+        return np.median(component).astype(int)
+
+    image, rows, columns = image.meta_copy()
+    pixels = image.load()
+    npimage = np.array(image)
+
+    for i, j in itertools.product(range(rows), range(columns)):
+        mask = npimage[i: i + kernel_size, j: j + kernel_size]
+        pixels[j, i] = (
+            integer_mask_median(mask[:, :, 0].flatten()), # R
+            integer_mask_median(mask[:, :, 1].flatten()), # G
+            integer_mask_median(mask[:, :, 2].flatten())  # B
+        )
+
+    return DetailedImage(image)
 
 def simulate(image):
     # Show image [IM]
     show_image(image)
 
-    # Negative filter [IM]
+    # Negative [IM]
     show_image(negative(image))
 
     # RGB to YIQ and YIQ to RGB [IM]
@@ -152,27 +191,32 @@ def simulate(image):
     show_image(rgb_image)
 
     # R, G and B bands for colored and monocromatic images [IM]
-    show_image(band_red(image))
-    show_image(band_red(image, monocromatic=True))
+    show_image(red_band(image))
+    show_image(red_band(image, monocromatic=True))
 
-    show_image(band_green(image))
-    show_image(band_green(image, monocromatic=True))
+    show_image(green_band(image))
+    show_image(green_band(image, monocromatic=True))
 
-    show_image(band_blue(image))
-    show_image(band_blue(image, monocromatic=True))
+    show_image(blue_band(image))
+    show_image(blue_band(image, monocromatic=True))
 
     # Additive and multiplicative brightness control [IM]
     show_image(brightness_control_additive(image, 100))
     show_image(brightness_control_multiplicative(image, 2))
 
     # Threshold over Y [IM]
-    show_image(band_y_threshold(image))
-    show_image(band_y_threshold(image, 100))
+    show_image(y_band_threshold(image))
+    show_image(y_band_threshold(image, 100))
+
+    # Mean and Median filters - slow operations for large images [IM]
+    show_image(mean_filter(image=lena, kernel_size=3)) # just slow [IM]
+    show_image(median_filter(lena, kernel_size=3)) # little bit slower than mean [IM]
 
 def main():
-    # Load and show image [IM]
-    lena = load_image(LENA_IMAGE_PATH)
+    LENA_IMAGE_PATH = "../assets/images/lena.jpg"
 
+    # Load image and simulate [IM]
+    lena = load_image(LENA_IMAGE_PATH)
     simulate(image=lena)
 
 if __name__ == '__main__':
