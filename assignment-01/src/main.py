@@ -30,6 +30,16 @@ def negative(image):
 
     return DetailedImage(image)
 
+def negative_luminance(image):
+    image, image_range = image.meta_copy()
+    pixels = image.load()
+
+    for i, j in image_range:
+        Y, I, Q = pixels[i, j]
+        pixels[i, j] = (255 - Y, 0, 0)
+
+    return DetailedImage(image)
+
 def rgb_to_yiq(image):
     image, image_range = image.meta_copy()
     pixels = image.load()
@@ -91,6 +101,16 @@ def blue_band(image, monocromatic=False):
     for i, j in image_range:
         _, _, B = pixels[i, j]
         pixels[i, j] = (B, B, B) if monocromatic else (0, 0, B)
+
+    return DetailedImage(image)
+
+def luminance_band(image, monocromatic=False): # Y_band
+    image, image_range = rgb_to_yiq(image).meta_copy()
+    pixels = image.load()
+
+    for i, j in image_range:
+        Y, _, _ = pixels[i, j]
+        pixels[i, j] = (Y, Y, Y) if monocromatic else (Y, 0, 0)
 
     return DetailedImage(image)
 
@@ -195,9 +215,6 @@ def simulate(image):
     # Show image [IM]
     show_image(image)
 
-    # Negative [IM]
-    show_image(negative(image))
-
     # RGB to YIQ and YIQ to RGB [IM]
     yiq_image = rgb_to_yiq(image)
     show_image(yiq_image)
@@ -214,6 +231,24 @@ def simulate(image):
 
     show_image(blue_band(image))
     show_image(blue_band(image, monocromatic=True))
+
+    y_only_band = luminance_band(image)
+    y_only_band_mono = luminance_band(image, monocromatic=True)
+    show_image(y_only_band)
+    show_image(luminance_band(image, monocromatic=True))
+
+    back_to_rgb_image = yiq_to_rgb(y_only_band)
+    back_to_rgb_image_mono = yiq_to_rgb(y_only_band_mono)
+    show_image(back_to_rgb_image)
+    show_image(back_to_rgb_image_mono)
+
+    # Negative [IM]
+    show_image(negative(image))
+    negative_luminance_img = negative_luminance(yiq_image)
+    show_image(negative_luminance_img)
+
+    negative_luminance_rgb_img = yiq_to_rgb(negative_luminance_img)
+    show_image(negative_luminance_rgb_img)
 
     # Additive and multiplicative brightness control [IM]
     show_image(brightness_control_additive(image, 100))
@@ -251,26 +286,31 @@ def simulate(image):
     show_image(mask_filter(image, sobel_over_y_mask))
 
     # Suggested filters [IM]
-    sobel_over_y_mask = np.array(
+    custom_filter_1 = np.array(
         [[ 0, -1,  0],
          [-1,  5, -1],
          [ 0, -1,  0]]
     )
-    show_image(mask_filter(image, sobel_over_y_mask))
+    show_image(mask_filter(image, custom_filter_1))
 
-    sobel_over_y_mask = np.array(
+    custom_filter_2 = np.array(
         [[0,  0,  0],
          [0,  1,  0],
          [0,  0, -1]]
     )
-    show_image(mask_filter(image, sobel_over_y_mask))
+    show_image(mask_filter(image, custom_filter_2))
     
 
 def main():
     LENA_IMAGE_PATH = "../assets/images/lena.jpg"
+    LENA_128_IMAGE_PATH = "../assets/images/lena_128.jpg"
+    LENA_256_IMAGE_PATH = "../assets/images/lena_256.jpg"
+    BABOON_256_IMAGE_PATH = "../assets/images/baboon_256.jpg"
+    PEPERS_256_IMAGE_PATH = "../assets/images/pepers_256.jpg"
+    TEST_256_IMAGE_PATH = "../assets/images/test_256.jpg"
 
     # Load image and simulate [IM]
-    lena = load_image(LENA_IMAGE_PATH)
+    lena = load_image(PEPERS_256_IMAGE_PATH)
     simulate(image=lena)
 
 if __name__ == '__main__':
