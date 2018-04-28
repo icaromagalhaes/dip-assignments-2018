@@ -104,13 +104,14 @@ def masked(image, mask):
 
 
 def simulate(image):
+    # Original image [IM]
     show_image(image)
 
+    # Y band / grayscale image [IM]
     y_band_image = rgb_to_y_band(image)
     show_image(y_band_image)
 
-
-
+    # First sharpness filter with variants c and d [IM]
     def build_a1_mask(c, d):
         return np.array([
             [ 0,  -c,      0],
@@ -118,6 +119,7 @@ def simulate(image):
             [ 0,  -c,      0]
         ])
 
+    # Second sharpness filter with variants c and d [IM]
     def build_a2_mask(c, d):
         return np.array([
             [-c,  -c,     -c],
@@ -125,23 +127,28 @@ def simulate(image):
             [-c,  -c,     -c]
         ])
 
+    # Sharpness filter tests with default parameters [IM]
     a1_mask_c1d1 = build_a1_mask(c=1, d=1)
     show_image(masked(y_band_image, a1_c1d1_mask))
 
     a2_mask_c1d1 = build_a2_mask(c=1, d=1)
     show_image(masked(y_band_image, a2_c1d1_mask))
 
-
+    # Histogram expansion [IM]
     expanded = histogram_expansion(y_band_image)
     show_image(expanded)
 
+    # Histogram equalization [IM]
     equalized = histogram_equalization(y_band_image)
     show_image(equalized)
 
-    equalized_and_expanded = histogram_expansion(equalized)
+    # Histogram equalziation over expansion (expansion -> equalization) [IM]
     expanded_and_equalized = histogram_equalization(expanded)
-    show_image(equalized_and_expanded)
     show_image(expanded_and_equalized)
+
+    # Histogram expansion over equalization (equalization -> expansion) [IM]
+    equalized_and_expanded = histogram_expansion(equalized)
+    show_image(equalized_and_expanded)
 
 
 def main():
