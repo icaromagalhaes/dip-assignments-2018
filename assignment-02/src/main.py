@@ -22,7 +22,8 @@ def load_image(path):
 
 
 def show_image(detailed_image):
-    detailed_image.raw_content.show()
+    image = detailed_image.raw_content
+    image.show()
 
 
 def rgb_to_y_band(image):
@@ -212,11 +213,11 @@ def main():
     LENA_128_IMAGE_PATH = "../assets/images/lena_128.jpg"
     LENA_256_IMAGE_PATH = "../assets/images/lena_256.jpg"
     BABOON_256_IMAGE_PATH = "../assets/images/baboon_256.jpg"
-    PEPERS_256_IMAGE_PATH = "../assets/images/pepers_256.jpg"
-    TEST_256_IMAGE_PATH = "../assets/images/test_256.jpg"
+    CAMERAMAN_IMAGE_PATH = "../assets/images/cameraman.jpg"
+    SAT_IMAGE_PATH = "../assets/images/sat.jpg"
 
-    lena = load_image(LENA_256_IMAGE_PATH)
-    simulate(image=lena)
+    image = load_image(LENA_256_IMAGE_PATH)
+    simulate(image=image)
 
 if __name__ == '__main__':
     main()
