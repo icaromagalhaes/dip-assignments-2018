@@ -13,12 +13,15 @@ class DetailedImage(object):
     def meta_copy(self):
         return self.raw_image_copy(), itertools.product(range(self.rows), range(self.columns))
 
+
 def load_image(path):
     raw_image = Image.open(path)
     return DetailedImage(raw_content=raw_image)
 
+
 def show_image(detailed_image):
     detailed_image.raw_content.show()
+
 
 def negative(image):
     image, image_range = image.meta_copy()
@@ -30,6 +33,7 @@ def negative(image):
 
     return DetailedImage(image)
 
+
 def negative_luminance(image):
     image, image_range = image.meta_copy()
     pixels = image.load()
@@ -39,6 +43,7 @@ def negative_luminance(image):
         pixels[i, j] = (255 - Y, 0, 0)
 
     return DetailedImage(image)
+
 
 def rgb_to_yiq(image):
     image, image_range = image.meta_copy()
@@ -57,6 +62,7 @@ def rgb_to_yiq(image):
 
     return DetailedImage(image)
 
+
 def yiq_to_rgb(image):
     image, image_range = image.meta_copy()
     pixels = image.load()
@@ -74,6 +80,7 @@ def yiq_to_rgb(image):
 
     return DetailedImage(image)
 
+
 def red_band(image, monocromatic=False):
     image, image_range = image.meta_copy()
     pixels = image.load()
@@ -83,6 +90,7 @@ def red_band(image, monocromatic=False):
         pixels[i, j] = (R, R, R) if monocromatic else (R, 0, 0)
 
     return DetailedImage(image)
+
 
 def green_band(image, monocromatic=False):
     image, image_range = image.meta_copy()
@@ -94,6 +102,7 @@ def green_band(image, monocromatic=False):
 
     return DetailedImage(image)
 
+
 def blue_band(image, monocromatic=False):
     image, image_range = image.meta_copy()
     pixels = image.load()
@@ -103,6 +112,7 @@ def blue_band(image, monocromatic=False):
         pixels[i, j] = (B, B, B) if monocromatic else (0, 0, B)
 
     return DetailedImage(image)
+
 
 def luminance_band(image, monocromatic=False): # Y_band
     image, image_range = rgb_to_yiq(image).meta_copy()
@@ -114,11 +124,13 @@ def luminance_band(image, monocromatic=False): # Y_band
 
     return DetailedImage(image)
 
+
 def limited_rgb(R, G, B):
     limit = lambda value: 255 if value > 255 else (
         0 if value < 0 else value
     )
     return limit(R), limit(G), limit(B)
+
 
 def brightness_control_additive(image, C):
     image, image_range = image.meta_copy()
@@ -143,6 +155,7 @@ def brightness_control_multiplicative(image, C):
 
     return DetailedImage(image)
 
+
 def y_band_threshold(image, M=None):
     image, image_range = rgb_to_yiq(image).meta_copy()
     pixels = image.load()
@@ -157,6 +170,7 @@ def y_band_threshold(image, M=None):
         pixels[i, j] = ((255 if Y >= M else 0), 0, 0)
 
     return yiq_to_rgb(DetailedImage(image))
+
 
 def mean_filter(image, kernel_size=3):
     def integer_mask_mean(component):
@@ -176,6 +190,7 @@ def mean_filter(image, kernel_size=3):
 
     return DetailedImage(image)
 
+
 def median_filter(image, kernel_size=3):
     def integer_mask_median(component):
         return np.median(component).astype(int)
@@ -194,22 +209,31 @@ def median_filter(image, kernel_size=3):
 
     return DetailedImage(image)
 
-def mask_filter(image, mask):
+
+def masked(image, mask):
     rows, columns = image.rows, image.columns
     image, _ = image.meta_copy()
     pixels = image.load()
     npimage = np.array(image)
+    mask_dimm = mask[0].size
+    border_limit = mask_dimm - 1
 
-    for i, j in itertools.product(range(2, rows - 2), range(2, columns - 2)):
-        newMask = npimage[i: i + 3, j: j + 3]
+    row_range = range(border_limit, rows - border_limit)
+    col_range = range(border_limit, columns - border_limit)
+    image_range = itertools.product(row_range, col_range)
 
-        masked_R = np.sum(mask * newMask[:, :, 0])
-        masked_G = np.sum(mask * newMask[:, :, 1])
-        masked_B = np.sum(mask * newMask[:, :, 2])
+    for i, j in image_range:
+        newMask = npimage[i: i + mask_dimm, j: j + mask_dimm]
+
+        masked_R = int(np.sum(mask * newMask[:, :, 0]))
+        masked_G = int(np.sum(mask * newMask[:, :, 1]))
+        masked_B = int(np.sum(mask * newMask[:, :, 2]))
 
         pixels[j, i] = (masked_R, masked_G, masked_B)
-    
-    return DetailedImage(ImageOps.crop(image, border=3))
+
+    image = ImageOps.crop(image, border=mask_dimm)
+    return DetailedImage(image)
+
 
 def simulate(image):
     # Show image [IM]
@@ -268,7 +292,7 @@ def simulate(image):
          [-1,  4, -1],
          [ 0, -1,  0]]
     )
-    show_image(mask_filter(image, laplacian_mask))
+    show_image(masked(image, laplacian_mask))
 
     # Sobel filter [IM]
     sobel_over_x_mask = np.array(
@@ -276,14 +300,14 @@ def simulate(image):
          [-2,  0,  2],
          [-1,  0,  1]]
     )
-    show_image(mask_filter(image, sobel_over_x_mask))
+    show_image(masked(image, sobel_over_x_mask))
 
     sobel_over_y_mask = np.array(
         [[-1, -2, -1],
          [ 0,  0,  0],
          [ 1,  2,  1]]
     )
-    show_image(mask_filter(image, sobel_over_y_mask))
+    show_image(masked(image, sobel_over_y_mask))
 
     # Suggested filters [IM]
     custom_filter_1 = np.array(
@@ -291,15 +315,15 @@ def simulate(image):
          [-1,  5, -1],
          [ 0, -1,  0]]
     )
-    show_image(mask_filter(image, custom_filter_1))
+    show_image(masked(image, custom_filter_1))
 
     custom_filter_2 = np.array(
         [[0,  0,  0],
          [0,  1,  0],
          [0,  0, -1]]
     )
-    show_image(mask_filter(image, custom_filter_2))
-    
+    show_image(masked(image, custom_filter_2))
+
 
 def main():
     LENA_IMAGE_PATH = "../assets/images/lena.jpg"
