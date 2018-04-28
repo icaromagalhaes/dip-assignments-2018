@@ -96,7 +96,7 @@ def masked(image, mask):
 
     for i, j in image_range:
         newMask = npimage[i: i + mask_dimm, j: j + mask_dimm]
-        masked_component = np.sum(mask * newMask[:, :, 0])
+        masked_component = int(np.sum(mask * newMask[:, :, 0]))
         pixels[j, i] = (masked_component, masked_component, masked_component)
 
     image = ImageOps.crop(image, border=mask_dimm)
@@ -127,12 +127,41 @@ def simulate(image):
             [-c,  -c,     -c]
         ])
 
+    # Border detection filters [IM]
+    b1_mask = np.array([
+        [-1/8, -1/8, -1/8],
+        [-1/8,  1,   -1/8],
+        [-1/8, -1/8, -1/8]
+    ])
+    show_image(masked(y_band_image, b1_mask))
+
+    b2_mask = np.array([
+        [-1, -1, -1],
+        [ 0,  0,  0],
+        [ 1,  1,  1]
+    ])
+    show_image(masked(y_band_image, b2_mask))
+
+    b3_mask = np.array([
+        [-1,  0, 1],
+        [-1,  0, 1],
+        [-1,  0, 1]
+    ])
+    show_image(masked(y_band_image, b3_mask))
+
+    b4_mask = np.array([
+        [-1, -1,  0],
+        [-1,  0,  1],
+        [ 0,  1,  1]
+    ])
+    show_image(masked(y_band_image, b4_mask))
+
     # Sharpness filter tests with default parameters [IM]
     a1_mask_c1d1 = build_a1_mask(c=1, d=1)
-    show_image(masked(y_band_image, a1_c1d1_mask))
+    show_image(masked(y_band_image, a1_mask_c1d1))
 
     a2_mask_c1d1 = build_a2_mask(c=1, d=1)
-    show_image(masked(y_band_image, a2_c1d1_mask))
+    show_image(masked(y_band_image, a2_mask_c1d1))
 
     # Histogram expansion [IM]
     expanded = histogram_expansion(y_band_image)
@@ -159,7 +188,7 @@ def main():
     PEPERS_256_IMAGE_PATH = "../assets/images/pepers_256.jpg"
     TEST_256_IMAGE_PATH = "../assets/images/test_256.jpg"
 
-    lena = load_image(LENA_IMAGE_PATH)
+    lena = load_image(LENA_256_IMAGE_PATH)
     simulate(image=lena)
 
 if __name__ == '__main__':
