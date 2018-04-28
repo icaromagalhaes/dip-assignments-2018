@@ -45,15 +45,14 @@ def histogram_expansion(image):
     pixels = image.load()
     mimax, _, _ = image.getextrema()
     min, max = mimax[0], mimax[1]
-    
+
     for i, j in image_range:
         fxy, _, _ = pixels[i, j]
 
         expanded_px = gxy(fxy, min, max)
         pixels[i, j] = (expanded_px, expanded_px, expanded_px)
-       
-    return DetailedImage(image)
 
+    return DetailedImage(image)
 
 def histogram_equalization(image):
     """
@@ -79,14 +78,59 @@ def histogram_equalization(image):
                 for i in range_256:
                     lookup_table.append(n // step)
                     n = n + original_histogram[i+band_idx]
+
     return DetailedImage(image.point(lookup_table))
+
+
+def masked(image, mask):
+    rows, columns = image.rows, image.columns
+    image, _ = image.meta_copy()
+    pixels = image.load()
+    npimage = np.array(image)
+    mask_dimm = mask[0].size
+    border_limit = mask_dimm - 1
+
+    row_range = range(border_limit, rows - border_limit)
+    col_range = range(border_limit, columns - border_limit)
+    image_range = itertools.product(row_range, col_range)
+
+    for i, j in image_range:
+        newMask = npimage[i: i + mask_dimm, j: j + mask_dimm]
+        masked_component = np.sum(mask * newMask[:, :, 0])
+        pixels[j, i] = (masked_component, masked_component, masked_component)
+
+    image = ImageOps.crop(image, border=mask_dimm)
+    return DetailedImage(image)
 
 
 def simulate(image):
     show_image(image)
-    
+
     y_band_image = rgb_to_y_band(image)
     show_image(y_band_image)
+
+
+
+    def build_a1_mask(c, d):
+        return np.array([
+            [ 0,  -c,      0],
+            [-c,   4*c+d, -c],
+            [ 0,  -c,      0]
+        ])
+
+    def build_a2_mask(c, d):
+        return np.array([
+            [-c,  -c,     -c],
+            [-c,   8*c+d, -c],
+            [-c,  -c,     -c]
+        ])
+
+    a1_mask_c1d1 = build_a1_mask(c=1, d=1)
+    show_image(masked(y_band_image, a1_c1d1_mask))
+
+    a2_mask_c1d1 = build_a2_mask(c=1, d=1)
+    show_image(masked(y_band_image, a2_c1d1_mask))
+
 
     expanded = histogram_expansion(y_band_image)
     show_image(expanded)
@@ -96,7 +140,6 @@ def simulate(image):
 
     equalized_and_expanded = histogram_expansion(equalized)
     expanded_and_equalized = histogram_equalization(expanded)
-
     show_image(equalized_and_expanded)
     show_image(expanded_and_equalized)
 
