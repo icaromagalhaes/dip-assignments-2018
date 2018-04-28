@@ -26,16 +26,38 @@ def rgb_to_y_band(image):
 
     for i, j in image_range:
         R, G, B = pixels[i, j]
-        Y_B = int(16 + (65.481 * R)/256 + (122.233 * G)/256 + (24.966 * B)/256)
+        Y_B = int(R * 0.299 + G * 0.587 + B * 0.114)
         pixels[i, j] = (Y_B, Y_B, Y_B)
 
     return DetailedImage(image)
 
+def histogram_expand(image, border=0, fill=0):
+    def gxy(fxy, min, max):
+        return int(((fxy - min) * 255)/(max-min))
+
+    image, image_range = image.meta_copy()
+    pixels = image.load()
+    mimax, _, _ = image.getextrema()
+    min, max = mimax[0], mimax[1]
+    
+    for i, j in image_range:
+        fxy, _, _ = pixels[i, j]
+
+        expanded_px = gxy(fxy, min, max)
+        pixels[i, j] = (expanded_px, expanded_px, expanded_px)
+       
+    return DetailedImage(image)
+
+
 def simulate(image):
     show_image(image)
+    
     y_band_image = rgb_to_y_band(image)
-
     show_image(y_band_image)
+
+    expanded = histogram_expand(y_band_image)
+    show_image(expanded)
+    
 
 def main():
     LENA_IMAGE_PATH = "../assets/images/lena.jpg"
