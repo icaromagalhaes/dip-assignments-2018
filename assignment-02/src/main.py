@@ -156,6 +156,28 @@ def simulate(image):
     ])
     show_image(masked(y_band_image, b4_mask))
 
+    # Emboss filters [IM]
+    c1_mask = np.array([
+        [ 0,  0,  0],
+        [ 0,  1,  0],
+        [ 0,  0, -1]
+    ])
+    show_image(masked(y_band_image, c1_mask))
+
+    c2_mask = np.array([
+        [ 0,  0, -1],
+        [ 0,  1,  0],
+        [ 0,  0,  0]
+    ])
+    show_image(masked(y_band_image, c2_mask))
+
+    c3_mask = np.array([
+        [ 0,  0, 2],
+        [ 0, -1, 0],
+        [-1,  0, 0]
+    ])
+    show_image(masked(y_band_image, c3_mask))
+
     # Sharpness filter tests with default parameters [IM]
     a1_mask_c1d1 = build_a1_mask(c=1, d=1)
     show_image(masked(y_band_image, a1_mask_c1d1))
