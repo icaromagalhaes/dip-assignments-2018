@@ -127,6 +127,18 @@ def simulate(image):
             [-c,  -c,     -c]
         ])
 
+    # Sharpness filter tests with variants [IM]
+    for c_d_variant in [
+        ( 1,  1), # default variant [IM]
+        ( 3,  3), (-2, 2), ( 4,   2),
+        ( 5,  0), (-5, 0), (-255, 0)
+    ]:
+        c, d = c_d_variant
+        a1_mask = build_a1_mask(c, d)
+        show_image(masked(y_band_image, a1_mask))
+        a2_mask = build_a2_mask(c, d)
+        show_image(masked(y_band_image, a2_mask))
+
     # Border detection filters [IM]
     b1_mask = np.array([
         [-1/8, -1/8, -1/8],
@@ -177,13 +189,6 @@ def simulate(image):
         [-1,  0, 0]
     ])
     show_image(masked(y_band_image, c3_mask))
-
-    # Sharpness filter tests with default parameters [IM]
-    a1_mask_c1d1 = build_a1_mask(c=1, d=1)
-    show_image(masked(y_band_image, a1_mask_c1d1))
-
-    a2_mask_c1d1 = build_a2_mask(c=1, d=1)
-    show_image(masked(y_band_image, a2_mask_c1d1))
 
     # Histogram expansion [IM]
     expanded = histogram_expansion(y_band_image)
